@@ -9,10 +9,13 @@ import feeLogModel from "./model/feeLogModel.js";
 import nodemailer from "nodemailer"
 import path from "path";
 import { sendEmail } from "./util.js/mail.js";
+import router from "./router/routes.js";
 const app=express();
+
 
 async function index(){
 app.use(express.json());
+app.use(router);
 
 await connectdb();
 app.post('/',async (req,res)=>{
@@ -24,91 +27,7 @@ app.post('/',async (req,res)=>{
     );
 })
 
-app.post('/api/signup',async (req,res)=>{
-    try{
-const {email,password,role}=req.body;
-console.log(`${email} ${password} ${role}`);
-const existingUser=await userModel.findOne({email});
-  if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
-const hashedpassword=await bcrypt.hash(password,10)
-const user=await userModel.create({
-    email:email,
-    password:hashedpassword,
-    role:role || 'princpal'
 
-})
-const token=generateToken(user._id);
-
- return res.status(201).json({
-   success:true,
-
-   message:"succesful user created",
-   token,
-   user:{
-      id: user._id,
-      email:user.email
-   }
-
-  })
-}catch(error){
-    res.status(500).json({error:error.message});
-}
-
-})
-
-app.post(`/api/signin`,async (req,res)=>{
-    try{
-    const {email,password}=req.body;
-   const user=await userModel.findOne({email});
-
-   if(!user){
-     return  res.status(401).status({
-         message:"user not exist",
-      })
-   }
-   
-   const ispassword=await bcrypt.compare(password,user.password);
- const token =generateToken(user._id);
-   if(ispassword && user.email ===email){
-    return   res.status(200).json({
-          success:true,
-         message:"succesul login",
-         token,
-         user:{
-            id:user._id,
-            email:user.email
-         }
-      })
-   }
-  return  res.status(401).json({
-    message:"fail to signin",
-   })
-}catch(error){
-    res.status(500).json({ error: error.message });
-}
-
-})
-
-app.post('/api/students',authorization,async (req,res)=>{
-    try{
-    const student=await studentModel.create(req.body);
-    res.status(201).json(student);
-
-    } catch(error){
-       res.status(500).json({error:error.message})
-    }
-
-})
-app.get('/api/students',authorization,async (req,res)=>{
-    try{
-        const students=await studentModel.find().sort({createdAt:-1});
-        res.json(students);
-    }catch(error){
-        res.status(500).json({error:error.message})
-    }
-})
     app.listen(3000,()=>{
         console.log("server start");
     })
